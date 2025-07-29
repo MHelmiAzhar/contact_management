@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { use, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { useLocalStorage } from 'react-use'
 import { getContacts } from '../../lib/api/contactApi'
-import { alertError } from '../../lib/alert'
+import { alertConfirm, alertError, alertSuccess } from '../../lib/alert'
+import { userDeleteAccount } from '../../lib/api/userApi'
 
 export default function ContactList() {
   const [showSearchForm, setShowSearchForm] = useState(true)
@@ -35,9 +36,21 @@ export default function ContactList() {
     }
   }
 
-  async function handleSearchContact(e) {
-    e.preventDefault()
-    await fetchContacts()
+  async function handleDeleteContact(id) {
+    if (
+      !(await alertConfirm('Are you sure you want to delete this contact?'))
+    ) {
+      return
+    }
+    const response = await userDeleteAccount(token, id)
+    const responseBody = await response.json()
+    if (response.status === 200) {
+      setContacts((prev) => prev.filter((contact) => contact.id !== id))
+      console.log('Contact deleted successfully:', responseBody.data)
+      await alertSuccess('Contact deleted successfully')
+    } else {
+      await alertError(responseBody.errors)
+    }
   }
 
   function handlePages() {
@@ -52,9 +65,10 @@ export default function ContactList() {
     fetchContacts().then(() => console.log('Contacts fetched successfully'))
   }, [page, name, email, phone])
 
-  console.log(handlePages())
-  console.log('Current page:', page)
-  console.log('Total pages:', totalPages)
+  useEffect(() => {
+    // Reset page to 1 when search criteria changes
+    setPage(1)
+  }, [name, email, phone])
 
   return (
     <div>
@@ -81,7 +95,7 @@ export default function ContactList() {
           >
             <i
               className={`fas text-lg ${
-                showSearchForm ? 'fa-chevron-down' : 'fa-chevron-up'
+                showSearchForm ? 'fa-chevron-up' : 'fa-chevron-down'
               }`}
               id="toggleSearchIcon"
             ></i>
@@ -89,7 +103,7 @@ export default function ContactList() {
         </div>
         {showSearchForm && (
           <div id="searchFormContent" className="mt-4">
-            <form onSubmit={handleSearchContact}>
+            <form>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                   <label
@@ -158,14 +172,6 @@ export default function ContactList() {
                   </div>
                 </div>
               </div>
-              <div className="mt-5 text-right">
-                <button
-                  type="submit"
-                  className="px-5 py-3 bg-gradient text-white rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 font-medium shadow-lg transform hover:-translate-y-0.5"
-                >
-                  <i className="fas fa-search mr-2"></i> Search
-                </button>
-              </div>
             </form>
           </div>
         )}
@@ -233,12 +239,14 @@ export default function ContactList() {
               <div className="mt-4 flex justify-end space-x-3">
                 <Link
                   to={`/dashboard/contacts/${contact.id}/edit`}
-                  href="edit_contact.html"
                   className="px-4 py-2 bg-gradient text-white rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 font-medium shadow-md flex items-center"
                 >
                   <i className="fas fa-edit mr-2"></i> Edit
                 </Link>
-                <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 font-medium shadow-md flex items-center">
+                <button
+                  onClick={() => handleDeleteContact(contact.id)}
+                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 font-medium shadow-md flex items-center"
+                >
                   <i className="fas fa-trash-alt mr-2"></i> Delete
                 </button>
               </div>
