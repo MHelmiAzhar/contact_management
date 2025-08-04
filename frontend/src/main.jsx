@@ -8,7 +8,11 @@ import DashboardLayout from './components/DashboardLayout.jsx'
 import UserProfile from './components/User/UserProfile.jsx'
 import UserLogout from './components/User/UserLogout.jsx'
 import CreateContact from './components/contact/CreateContact.jsx'
-import ContactList from './components/contact/contactList.jsx'
+import ContactList from './components/contact/ContactList.jsx'
+import EditContact from './components/contact/EditContact.jsx'
+import ContactDetail from './components/contact/ContactDetail.jsx'
+import CreateAddress from './components/address/createAddress.jsx'
+import EditAddress from './components/address/EditAddress.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -26,6 +30,14 @@ createRoot(document.getElementById('root')).render(
           <Route path="contacts">
             <Route index element={<ContactList />} />
             <Route path="create" element={<CreateContact />} />
+            <Route path=":id">
+              <Route index element={<ContactDetail />} />
+              <Route path="edit" element={<EditContact />} />
+              <Route path="addresses">
+                <Route path="create" element={<CreateAddress />} />
+                <Route path=":addressId/edit" element={<EditAddress />} />
+              </Route>
+            </Route>
           </Route>
         </Route>
       </Routes>
