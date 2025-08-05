@@ -61,3 +61,13 @@ export const getUserProfile = async (token) => {
         }
     })
 }
+
+export const userDeleteAccount = async (token, id) => {
+    return fetch(`${import.meta.env.VITE_API_URL}/contacts/${id}`, {
+        method: "DELETE",
+        headers: {
+            'Accept': 'application/json',
+            'Authorization': `${token}`
+        }
+    })
+}
