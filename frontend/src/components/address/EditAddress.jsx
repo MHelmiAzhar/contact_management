@@ -1,7 +1,53 @@
 import { Link, useParams } from 'react-router'
+import { useLocalStorage } from 'react-use'
+import { alertError } from '../../lib/alert'
+import { detailContact } from '../../lib/api/contactApi'
+import { getAddressById } from '../../lib/api/addressApi'
+import { useEffect, useState } from 'react'
 
 export default function EditAddress() {
   const { id, addressId } = useParams()
+  const [address, setAddress] = useState({})
+  const [contact, setContact] = useState({})
+  const [token, _] = useLocalStorage('token', '')
+
+  //validasi pake zod
+
+  const fetchAddress = async () => {
+    try {
+      const response = await getAddressById(token, id, addressId)
+      if (response.status === 200) {
+        const data = await response.json()
+        setAddress(data.data)
+      } else {
+        await alertError('Failed to fetch address details')
+      }
+    } catch (error) {
+      await alertError('An error occurred while fetching address details')
+    }
+  }
+
+  const fetchContact = async () => {
+    try {
+      const response = await detailContact(token, id)
+      if (response.status === 200) {
+        const data = await response.json()
+        console.log('Contact data:', data.data)
+        setContact(data.data)
+      } else {
+        await alertError('Failed to fetch contact details')
+      }
+    } catch (error) {
+      console.log('Error fetching contact details:', error)
+      await alertError('An error occurred while fetching contact details')
+    }
+  }
+
+  useEffect(() => {
+    fetchAddress()
+    fetchContact()
+  }, [])
+
   return (
     <div>
       <div className="flex items-center mb-6">
@@ -26,9 +72,11 @@ export default function EditAddress() {
                 <i className="fas fa-user text-white"></i>
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">John Doe</h2>
+                <h2 className="text-xl font-semibold text-white">
+                  {contact.first_name} {contact.last_name}
+                </h2>
                 <p className="text-gray-300 text-sm">
-                  john.doe@example.com • +1 (555) 123-4567
+                  {contact.email} • {contact.phone}
                 </p>
               </div>
             </div>
@@ -52,7 +100,7 @@ export default function EditAddress() {
                   name="street"
                   className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   placeholder="Enter street address"
-                  value="123 Main St"
+                  value={address.street}
                   required
                 />
               </div>
@@ -76,7 +124,7 @@ export default function EditAddress() {
                     name="city"
                     className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="Enter city"
-                    value="New York"
+                    value={address.city}
                     required
                   />
                 </div>
@@ -96,20 +144,20 @@ export default function EditAddress() {
                     type="text"
                     id="province"
                     name="province"
-                    class="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="Enter province or state"
-                    value="NY"
+                    value={address.province}
                     required
                   />
                 </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
               <div>
                 <label
                   for="country"
-                  class="block text-gray-300 text-sm font-medium mb-2"
+                  className="block text-gray-300 text-sm font-medium mb-2"
                 >
                   Country
                 </label>
@@ -123,7 +171,7 @@ export default function EditAddress() {
                     name="country"
                     className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="Enter country"
-                    value="USA"
+                    value={address.country}
                     required
                   />
                 </div>
@@ -145,7 +193,7 @@ export default function EditAddress() {
                     name="postal_code"
                     className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="Enter postal code"
-                    value="10001"
+                    value={address.postal_code}
                     required
                   />
                 </div>
