@@ -1,24 +1,78 @@
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useLocalStorage } from 'react-use'
-import { alertError } from '../../lib/alert'
+import { alertError, alertSuccess } from '../../lib/alert'
 import { detailContact } from '../../lib/api/contactApi'
-import { getAddressById } from '../../lib/api/addressApi'
+import { getAddressById, updateAddress } from '../../lib/api/addressApi'
 import { useEffect, useState } from 'react'
+import { z } from 'zod'
+
+const addressSchema = z.object({
+  street: z.string().min(1, 'Street is required'),
+  city: z.string().min(1, 'City is required'),
+  province: z.string().min(1, 'Province/State is required'),
+  country: z.string().min(1, 'Country is required'),
+  postal_code: z.string().min(1, 'Postal Code is required')
+})
 
 export default function EditAddress() {
   const { id, addressId } = useParams()
-  const [address, setAddress] = useState({})
   const [contact, setContact] = useState({})
   const [token, _] = useLocalStorage('token', '')
+  const [formData, setFormData] = useState({
+    street: '',
+    city: '',
+    province: '',
+    country: '',
+    postal_code: ''
+  })
+  const [err, setErr] = useState({})
+  const navigate = useNavigate()
 
-  //validasi pake zod
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const result = addressSchema.safeParse(formData)
+    if (!result.success) {
+      const messages = result.error.issues
+        .map((error) => error.message)
+        .join(', ')
+      setErr(messages)
+      await alertError(messages)
+      return
+    }
+
+    // If validation passes, proceed with the API call
+    try {
+      const response = await updateAddress(token, id, addressId, formData)
+      if (response.status === 200) {
+        alertSuccess('Address updated successfully')
+        navigate({
+          pathname: `/dashboard/contacts/${id}`
+        })
+      } else {
+        alertError('Failed to update address')
+      }
+    } catch (error) {
+      console.log(error)
+      alertError('An error occurred while updating address')
+    }
+  }
 
   const fetchAddress = async () => {
     try {
       const response = await getAddressById(token, id, addressId)
       if (response.status === 200) {
         const data = await response.json()
-        setAddress(data.data)
+        setFormData({
+          street: data.data.street || '',
+          city: data.data.city || '',
+          province: data.data.province || '',
+          country: data.data.country || '',
+          postal_code: data.data.postal_code || ''
+        })
       } else {
         await alertError('Failed to fetch address details')
       }
@@ -82,7 +136,7 @@ export default function EditAddress() {
             </div>
           </div>
 
-          <form>
+          <form onSubmit={handleSubmit}>
             <div className="mb-5">
               <label
                 for="street"
@@ -100,8 +154,8 @@ export default function EditAddress() {
                   name="street"
                   className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   placeholder="Enter street address"
-                  value={address.street}
-                  required
+                  value={formData.street}
+                  onChange={handleChange}
                 />
               </div>
             </div>
@@ -124,8 +178,8 @@ export default function EditAddress() {
                     name="city"
                     className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="Enter city"
-                    value={address.city}
-                    required
+                    value={formData.city}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
@@ -146,8 +200,8 @@ export default function EditAddress() {
                     name="province"
                     className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="Enter province or state"
-                    value={address.province}
-                    required
+                    value={formData.province}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
@@ -171,7 +225,8 @@ export default function EditAddress() {
                     name="country"
                     className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="Enter country"
-                    value={address.country}
+                    value={formData.country}
+                    onChange={handleChange}
                     required
                   />
                 </div>
@@ -193,8 +248,8 @@ export default function EditAddress() {
                     name="postal_code"
                     className="w-full pl-10 pr-3 py-3 bg-gray-700 bg-opacity-50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="Enter postal code"
-                    value={address.postal_code}
-                    required
+                    value={formData.postal_code}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
